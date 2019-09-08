@@ -1,0 +1,15 @@
+{
+  "name": "waves",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@waves/waves-api": "^1.5.1",
+    "@waves/waves-transactions": "^3.16.3"
+  }
+}
