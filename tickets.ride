@@ -1,0 +1,61 @@
+{-# STDLIB_VERSION 3 #-}
+{-# CONTENT_TYPE DAPP #-}
+{-# SCRIPT_TYPE ACCOUNT #-}
+
+@Callable(i)
+func createOrder(price: Int) = {
+   let pmt = extract(i.payment)
+   if (!isDefined(pmt.assetId)) then throw("You need to use tokenId, not waves")
+   else {
+        let currentKey = toBase58String(i.caller.bytes);
+        let assetId = extract(pmt.assetId).toBase58String();
+        let uniqKey = currentKey + "_" + assetId + "_" + height.toString();
+        WriteSet([
+            DataEntry("assetAmount_" + uniqKey, pmt.amount),
+            DataEntry("assetPrice_" + uniqKey, price)
+        ])
+   }
+}
+
+@Callable(i)
+func buyTicket(uniqKey: String) = {
+    let pmt = extract(i.payment);
+    let assetId = extract(uniqKey.split("_")[1]);
+    let ownerId = extract(uniqKey.split("_")[0].addressFromString());
+    let price = match getInteger(this, "assetPrice_" + uniqKey) {
+        case p:Int => p
+        case _ => 0
+    }
+    let currentAmount = match getInteger(this, "assetAmount_" + uniqKey) {
+        case a:Int => a
+        case _ => 0
+    }
+    let newAmount = currentAmount - 1;
+    if (currentAmount <= 0) then throw("Have not enough of tickets for this price")
+    else if (isDefined(pmt.assetId)) then throw("You need to use waves") 
+    else if (pmt.amount < price) then throw("Count of waves is not match price") 
+    else {
+       ScriptResult(
+           WriteSet([DataEntry("assetAmount_" + uniqKey, newAmount)]),
+           TransferSet([
+                   ScriptTransfer(i.caller, 1, assetId.fromBase58String()),
+                   ScriptTransfer(ownerId, price, unit)
+           ])
+       )
+    }
+}
+
+@Callable(i)
+func checkIn() = {
+   let pmt = extract(i.payment)
+   if (!isDefined(pmt.assetId)) then throw("You need to use tokenId, not waves")
+   else if (pmt.amount != 1) then throw("Give only one ticket")
+   else {
+        let currentKey = toBase58String(i.caller.bytes);
+        let assetId = extract(pmt.assetId).toBase58String();
+        let uniqKey = currentKey + "_" + assetId + "_" + height.toString();
+        WriteSet([
+            DataEntry("checkin_" + uniqKey, lastBlock.timestamp)
+        ])
+   }
+}
