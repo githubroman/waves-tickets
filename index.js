@@ -1,4 +1,4 @@
-const { issue, broadcast, invokeScript, nodeInteraction } = require('@waves/waves-transactions');
+const { issue, broadcast, invokeScript, nodeInteraction, waitForTx } = require('@waves/waves-transactions');
 const nodeUrl = 'https://testnodes.wavesnodes.com/';
 const dApp = '3MsqcsQSU3FeyxcMjrRQHcM8pTGrHu8yyWX';
 const seed = 'traffic common hotel rent simple happy garbage hammer shock maximum earn peace';
@@ -125,3 +125,15 @@ listTickets('4L8TvHYgW4xeLCL3CqTXWK1oMohEDVV5KDnE2AaYu8tA', (err, ticketsList) =
   console.log(ticketsList)
 })
 
+const getEventInfo = (assetId, cb) => {
+  try {
+    waitForTx(assetId, { apiBase: nodeUrl, timeout: 10000 }).then((tx) => {
+      cb(null, tx)
+    })
+  } catch (err) {
+    cb(err)
+  }
+}
+getEventInfo('4L8TvHYgW4xeLCL3CqTXWK1oMohEDVV5KDnE2AaYu8tA', (err, tx) => {
+  console.log(err, tx)
+});
