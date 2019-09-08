@@ -4,17 +4,40 @@
 
 @Callable(i)
 func createOrder(price: Int) = {
-   let pmt = extract(i.payment)
-   if (!isDefined(pmt.assetId)) then throw("You need to use tokenId, not waves")
-   else {
-        let currentKey = toBase58String(i.caller.bytes);
-        let assetId = extract(pmt.assetId).toBase58String();
-        let uniqKey = currentKey + "_" + assetId + "_" + height.toString();
-        WriteSet([
-            DataEntry("assetAmount_" + uniqKey, pmt.amount),
-            DataEntry("assetPrice_" + uniqKey, price)
-        ])
-   }
+    let pmt = extract(i.payment)
+    if (!isDefined(pmt.assetId)) then throw("You need to use tokenId, not waves")
+    else {
+            let currentKey = toBase58String(i.caller.bytes);
+            let assetId = extract(pmt.assetId).toBase58String();
+            let uniqKey = currentKey + "_" + assetId + "_" + height.toString();
+            WriteSet([
+                DataEntry("assetAmount_" + uniqKey, pmt.amount),
+                DataEntry("assetPrice_" + uniqKey, price)
+            ])
+    }
+}
+
+@Callable(i)
+func cancelOrder(uniqKey: String) = {
+    let ownerId = extract(uniqKey.split("_")[0]);
+    let assetId = extract(uniqKey.split("_")[1]);
+    let senderId = toBase58String(i.caller.bytes);
+    let currentAmount = match getInteger(this, "assetAmount_" + uniqKey) {
+        case a:Int => a
+        case _ => 0
+    }
+    if (currentAmount <= 0) then throw("Order is already canceled or not exists")
+    else if (ownerId != senderId) then throw("Order has another owner")
+    else {
+        ScriptResult(
+            WriteSet([
+                DataEntry("assetAmount_" + uniqKey, 0)
+            ]),
+            TransferSet([
+                    ScriptTransfer(i.caller, currentAmount, assetId.fromBase58String())
+            ])
+        )
+    }
 }
 
 @Callable(i)
